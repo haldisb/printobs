@@ -58,6 +58,11 @@ aasta538:
     operator: Equinor_Energy
     ID: 77040
     typeids: 538
+    
+baltykII:
+    operator: Equinor
+    ID: 1200500
+    typeids: 538
 
 brage:
     operator: Wintershall_Dea_Norge
@@ -78,6 +83,11 @@ draupner:
 # owned by Odfjell Drilling and under contract for AkerBP
 deepseaNK: # DEEPSEA NORDKAPP
     ID: 77043
+    typeids: 22
+
+edvard_grieg:
+    operator: AkerBP
+    ID: 20959
     typeids: 22
 
 ekofiskL:
@@ -148,6 +158,11 @@ hjeltefjorden_b:
 #    ID: 76932
 #    typeids: 22
 
+ivar_aasen:
+    operator: AkerBP
+    ID: 20960
+    typeids: 22
+
 johansverdrup:
     operator:
     ID: 20929
@@ -171,6 +186,11 @@ kristin:
 hjelmsøybanken:
     operator:
     ID: 20926
+    typeids: 538
+    
+hjelmsøybankenII:
+    operator:
+    ID: 20924
     typeids: 538
 
 huldra: # not working
