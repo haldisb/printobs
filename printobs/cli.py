@@ -85,7 +85,7 @@ def main():
         t1 = time.time()
         # api call
         r = call_frost_api(sd, ed, s, v)
-        print(r.url)
+        #print(r.url)
         t2 = time.time()
         print('time used for api call:', f'{t2-t1:.2f}', 'seconds')
         # get additional info

@@ -101,8 +101,8 @@ def get_typeid(insitu_dict: dict, s: str) -> str:
     typeid = insitu_dict[s].get('typeids')
     return typeid
 
-def call_frost_api_v1(\
-    nID: str, varstr: str,frost_reference_time: str,\
+def call_frost_api_v1(
+    nID: str, varstr: str, frost_reference_time: str,
     client_id: str, client_secret: str)\
     -> 'requests.models.Response':
     """
@@ -116,8 +116,10 @@ def call_frost_api_v1(\
     #endpoint = 'https://frost-beta.met.no/api/v1/obs/met.no/filter/get?'
     #endpoint = 'https://frost-beta.met.no/api/v1/obs/met.no/filter/get?'
     #endpoint = 'https://test.frost-dev.k8s.met.no/api/v1/obs/met.no/kvkafka/get?'
+    #endpoint = 'https://frost-beta.met.no/api/v1/obs/met.no/kvkafka/get?'
+
     # HB change to frost-beta:
-    endpoint = 'https://frost-beta.met.no/api/v1/obs/met.no/kvkafka/get?'
+    endpoint = ' https://frost-rc.met.no/api/v1/obs/base/get?'
     parameters = {
                 'stationids': ID,
                 'elementids': varstr,
@@ -147,9 +149,7 @@ def call_frost_api_v1(\
     headers = {"Authorization": "Bearer " + r_tmp["access_token"]}
 
     #return requests.get(endpoint, parameters, auth=(client_id, client_id))
-    #r = requests.get(endpoint, parameters, headers=headers)
     r = requests.post(endpoint, parameters, headers=headers)
-
     return r
 
 def get_frost_df(r: 'requests.models.Response',v: str)\
@@ -191,6 +191,10 @@ def get_frost_df_v1(r: 'requests.models.Response')\
     sensor_id_lst = []
     # base df
     df = pd.json_normalize(r.json()['data']['tseries'])
+    print('###')
+    print('HERE 1')
+    print(df)
+    print('###')
     # df to be concatenated initialized with time
     """
     # location for stationary
@@ -201,20 +205,22 @@ def get_frost_df_v1(r: 'requests.models.Response')\
     # select time index, some ts have less than others
     # choose the one with most values
     no_of_ts = len(pd.json_normalize(r.json()['data']['tseries'][:]))
-    no_of_ts = min(4,no_of_ts)
+    no_of_ts = min(4, no_of_ts)
     lenlst = []
     for t in range(no_of_ts):
-        lenlst.append( len(pd.json_normalize(r.json()\
-                       ['data']['tseries'][t]['observations'])['time'].\
-                              to_frame()) )
+        lenlst.append(len(pd.json_normalize(r.json()\
+                      ['data']['tseries'][t]['observations'])['time'].\
+                             to_frame()))
     time_idx = lenlst.index(max(lenlst))
     dfc = pd.json_normalize(r.json()
       ['data']['tseries'][time_idx]['observations'])['time'].to_frame()
-    dinfo = {'sensor':{},'level':{},'parameterid':{},
-             'geometric height':{},'masl':{}}
+    #dinfo = {'sensor': {}, 'level': {}, 'parameterid': {},
+    #         'geometric height': {}, 'masl': {}}
+    dinfo = {'sensor': {}, 'level': {}, 'paramid': {},
+             'geometric height': {}, 'masl': {}}
     for vn in varstr_dict:
         idx = np.array(df['header.extra.element.id']\
-                [df['header.extra.element.id']==vn].index.to_list())
+                [df['header.extra.element.id'] == vn].index.to_list())
         ###
         # key variables for frost:
         #print(df['header.extra.element.id'][idx])
@@ -223,8 +229,13 @@ def get_frost_df_v1(r: 'requests.models.Response')\
         #print(df['header.id.sensor'][idx])
         ###
         sensors = df['header.id.sensor'][idx].values
-        parameterids = df['header.id.parameterid'][idx].values
+        #parameterids = df['header.id.parameterid'][idx].values
+        parameterids = df['header.id.paramid'][idx].values
         levels = df['header.id.level'][idx].values
+        print("#########################")
+        print('HERE 2')
+        print(levels)
+        print("#########################")
         if len(sensors) != len(np.unique(sensors)):
             print("-> id.sensor was not unique " \
                     + "selecting according to variable_def.yaml")
@@ -268,18 +279,26 @@ def get_frost_df_v1(r: 'requests.models.Response')\
             else:
                 dinfo['level'][vns] = levels[n]
             # parameterid
-            dinfo['parameterid'][vns] = parameterids[n]
+            #dinfo['parameterid'][vns] = parameterids[n]
+            dinfo['paramid'][vns] = parameterids[n]
             #print(df['header.extra.timeseries.geometry.level.value'][i])
     return dfc, dinfo
 
-def find_preferred(idx,sensors,refs,pref):
+def find_preferred(idx, sensors, refs, pref):
+    print('###')
+    print('HERE 3')
+    print(idx)
+    print(sensors)
+    print(refs)
+    print(pref)
+    print('###')
     sensorsU = np.unique(sensors)
     preferred_idx = []
     for s in sensorsU:
-        no = len(refs[sensors==s])
-        idx_1 = idx[sensors==s]
+        no = len(refs[sensors == s])
+        idx_1 = idx[sensors == s]
         if no > 1:
-            idx_2 = np.where(refs[sensors==s]==pref)
+            idx_2 = np.where(refs[sensors == s] == pref)
             idx_3 = idx_1[idx_2]
             preferred_idx.append(list(idx_3)[0])
         else:
@@ -293,7 +312,7 @@ def get_element_id_order(r: 'requests.models.Response')\
     idx_lst = []
     for vn in varstr_dict:
         idx = df['header.extra.element.id']\
-                [df['header.extra.element.id']==vn].index.to_list()
+                [df['header.extra.element.id'] == vn].index.to_list()
         idx_dict[vn] = idx
         idx_lst.append(idx)
     return idx_dict, flatten(idx_lst)
@@ -416,14 +435,14 @@ def format_df(df: 'pandas.core.frame.DataFrame')\
                     '': lambda x: "{:%Y-%m-%d %H:%M UTC }".\
                             format(pd.to_datetime(x, unit="ns"))
                     },
-        index = False).split('\n')
+        index=False).split('\n')
     return dfstr
 
 def format_info_df(
     df: 'pandas.core.frame.DataFrame',
-    fdf:list,
+    fdf: list,
     dinfo: dict,
-    attribute:str,
+    attribute: str,
     )\
     -> str:
     """
@@ -472,7 +491,7 @@ def print_formatted(dfstr: list, dfstr_info: str = None):
         print(dfstr_info)
     print('')
 
-def print_info(r: 'requests.models.Response',nID: str = None):
+def print_info(r: 'requests.models.Response', nID: str = None):
     print('\n')
     print('--> ', nID, ' <--')
     dfkeys = pd.json_normalize(\
@@ -506,11 +525,11 @@ def print_available_locations():
     """
     print available offshore locations
     """
-    l = list(range(1,len(insitu_dict.keys())+1))
+    l = list(range(1, len(insitu_dict.keys())+1))
     dfc = pd.DataFrame(l)
-    dfc = dfc.rename(columns={ dfc.columns[0]: '' })
+    dfc = dfc.rename(columns={dfc.columns[0]: ''})
     df = pd.DataFrame(insitu_dict.keys())
-    df = df.rename(columns={ df.columns[0]: 'available locations' })
+    df = df.rename(columns={df.columns[0]: 'available locations'})
     dfc = pd.concat([dfc, df.reindex(dfc.index)], axis=1)
     dfstr = dfc.to_string(index=False).split('\n')
     print('----------------------')
