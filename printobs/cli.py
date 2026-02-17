@@ -105,7 +105,7 @@ def main():
             if v == 'v1':
                 #print(format_info_df(df,fdf,dinfo,'sensor'))
                 print(format_info_df(df, fdf, dinfo, 'level'))
-                print(format_info_df(df, fdf, dinfo, 'parameterid'))
+                print(format_info_df(df, fdf, dinfo, 'paramid'))
             # print to screen
             if v == 'v1':
                 print_info(r, s)
