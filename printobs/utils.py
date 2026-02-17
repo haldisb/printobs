@@ -34,7 +34,7 @@ def parse_date(indate: str) -> datetime:
         print('Not able to parse input return as is')
         return indate
 
-def make_frost_reference_time_period(\
+def make_frost_reference_time_period(
     sdate: datetime, edate: datetime) -> str:
     """
     create special time format for frost call
@@ -46,8 +46,8 @@ def make_frost_reference_time_period(\
                             edate.strftime(formatstr))
     return refstr
 
-def call_frost_api(\
-    sdate: datetime, edate: datetime,\
+def call_frost_api(
+    sdate: datetime, edate: datetime,
     nID: str, v: str) -> 'requests.models.Response':
     """
     make frost api call
@@ -65,13 +65,13 @@ def call_frost_api(\
         print("No Frost CLIENT_SECRET given!")
     if v == 'v0':
         r = call_frost_api_v0(nID, varstr,
-                                frost_reference_time,
-                                client_id)
+                              frost_reference_time,
+                              client_id)
     elif v == 'v1':
         r = call_frost_api_v1(nID, varstr,
-                                frost_reference_time,
-                                client_id, client_secret)
-        print('r.status_code:',r.status_code)
+                              frost_reference_time,
+                              client_id, client_secret)
+        print('r.status_code:', r.status_code)
     if r.status_code == 200:
         return r
     else:
@@ -80,14 +80,14 @@ def call_frost_api(\
         except requests.exceptions.JSONDecodeError:
             print(r.status_code, r.text)
 
-def call_frost_api_v0(\
-    nID: str, varstr: str,frost_reference_time: str, client_id: str)\
+def call_frost_api_v0(
+    nID: str, varstr: str, frost_reference_time: str, client_id: str)\
     -> 'requests.models.Response':
     """
     frost call, retrieve data from frost v0
     """
     ID = 'SN' + str(insitu_dict[nID]['ID'])
-    endpoint = 'https://frost.met.no/observations/v0.jsonld' # v0
+    endpoint = 'https://frost.met.no/observations/v0.jsonld'  # v0
     parameters = {
                 'sources': ID,
                 'elements': varstr,
@@ -101,23 +101,17 @@ def get_typeid(insitu_dict: dict, s: str) -> str:
     typeid = insitu_dict[s].get('typeids')
     return typeid
 
-def call_frost_api_v1(\
-    nID: str, varstr: str,frost_reference_time: str,\
+def call_frost_api_v1(
+    nID: str, varstr: str, frost_reference_time: str,
     client_id: str, client_secret: str)\
     -> 'requests.models.Response':
     """
     frost call, retrieve data from frost v1
     """
     ID = insitu_dict[nID]['ID']
-    #endpoint = 'https://frost-prod.met.no/api/v1/obs/met.no/filter/get?'
-    #endpoint = 'https://frost-prod.met.no/api/v1/obs/met.no/kvkafka/get?'
-    #endpoint = 'https://frost-beta.met.no/api/v1/obs/met.no/kvkafka/get?'
-    #endpoint = 'https://restricted.frost-dev.k8s.met.no/api/v1/obs/met.no/kvkafka/get?'
-    #endpoint = 'https://frost-beta.met.no/api/v1/obs/met.no/filter/get?'
-    #endpoint = 'https://frost-beta.met.no/api/v1/obs/met.no/filter/get?'
-    #endpoint = 'https://test.frost-dev.k8s.met.no/api/v1/obs/met.no/kvkafka/get?'
-    # HB change to frost-beta:
-    endpoint = 'https://frost-beta.met.no/api/v1/obs/met.no/kvkafka/get?'
+    # HB change to frost-rc:
+    #endpoint = ' https://frost-rc.met.no/api/v1/obs/base/get?'
+    endpoint = ' https://frost.met.no/api/v1/obs/base/get?'
     parameters = {
                 'stationids': ID,
                 'elementids': varstr,
@@ -125,8 +119,6 @@ def call_frost_api_v1(\
                 'levels': 'all',
                 'incobs': 'true',
                 'sensors': '0,1,2,3,4,5,6',
-                #'typeids': '22,11,510'
-                # 'typeids': str(get_typeid(insitu_dict, nID))
                 }
 
     typeid = get_typeid(insitu_dict, nID)
@@ -146,10 +138,8 @@ def call_frost_api_v1(\
     r_tmp = json.loads(response.content)
     headers = {"Authorization": "Bearer " + r_tmp["access_token"]}
 
-    #return requests.get(endpoint, parameters, auth=(client_id, client_id))
-    #r = requests.get(endpoint, parameters, headers=headers)
-    r = requests.post(endpoint, parameters, headers=headers)
-
+    r = requests.get(endpoint, parameters, headers=headers)
+    print(r.url)
     return r
 
 def get_frost_df(r: 'requests.models.Response',v: str)\
@@ -201,56 +191,57 @@ def get_frost_df_v1(r: 'requests.models.Response')\
     # select time index, some ts have less than others
     # choose the one with most values
     no_of_ts = len(pd.json_normalize(r.json()['data']['tseries'][:]))
-    no_of_ts = min(4,no_of_ts)
+    no_of_ts = min(4, no_of_ts)
     lenlst = []
     for t in range(no_of_ts):
-        lenlst.append( len(pd.json_normalize(r.json()\
-                       ['data']['tseries'][t]['observations'])['time'].\
-                              to_frame()) )
+        lenlst.append(len(pd.json_normalize(r.json()\
+                      ['data']['tseries'][t]['observations'])['time'].\
+                             to_frame()))
     time_idx = lenlst.index(max(lenlst))
     dfc = pd.json_normalize(r.json()
       ['data']['tseries'][time_idx]['observations'])['time'].to_frame()
-    dinfo = {'sensor':{},'level':{},'parameterid':{},
-             'geometric height':{},'masl':{}}
+    dinfo = {'sensor': {}, 'level': {}, 'paramid': {},
+             'geometric height': {}, 'masl': {}}
     for vn in varstr_dict:
         idx = np.array(df['header.extra.element.id']\
-                [df['header.extra.element.id']==vn].index.to_list())
+                [df['header.extra.element.id'] == vn].index.to_list())
         ###
         # key variables for frost:
         #print(df['header.extra.element.id'][idx])
-        #print(df['header.id.parameterid'][idx])
+        #print(df['header.id.paramid'][idx])
         #print(df['header.id.level'][idx])
         #print(df['header.id.sensor'][idx])
         ###
         sensors = df['header.id.sensor'][idx].values
-        parameterids = df['header.id.parameterid'][idx].values
+        paramids = df['header.id.paramid'][idx].values
         levels = df['header.id.level'][idx].values
+        #levels = df['header.id.level'][idx].values/100
         if len(sensors) != len(np.unique(sensors)):
             print("-> id.sensor was not unique " \
                     + "selecting according to variable_def.yaml")
             print("   affected variable: ", vn)
-            # 1. prioritize according to parameterid
-            if len(np.unique(parameterids)) > 1:
-                print('multiple parameterids (',\
-                        len(np.unique(parameterids)),')')
-                print('parameterids:',np.unique(parameterids))
-                idx = find_preferred(\
-                        idx,sensors,parameterids,\
-                        varstr_dict[vn]['prime_parameterid'])
+            # 1. prioritize according to paramid
+            if len(np.unique(paramids)) > 1:
+                print('multiple paramids (',
+                        len(np.unique(paramids)), ')')
+                print('paramids:',np.unique(paramids))
+                idx = find_preferred(
+                        idx,sensors,paramids,\
+                        varstr_dict[vn]['prime_paramid'])
                 sensors = df['header.id.sensor'][idx].values
-                parameterids = df['header.id.parameterid'][idx].values
+                paramids = df['header.id.paramid'][idx].values
                 levels = df['header.id.level'][idx].values
             # 2. prioritize according to level
             if len(np.unique(levels)) > 1:
-                print('multiple levels (',len(np.unique(levels)),')')
+                print('multiple levels (', len(np.unique(levels)), ')')
                 print('unique(levels):',np.unique(levels))
-                idx = find_preferred(\
+                idx = find_preferred(
                         idx,sensors,levels,\
                         varstr_dict[vn]['prime_level'])
                 sensors = df['header.id.sensor'][idx].values
-                parameterids = df['header.id.parameterid'][idx].values
+                paramids = df['header.id.paramid'][idx].values
                 levels = df['header.id.level'][idx].values
-        for n,i in enumerate(idx):
+        for n, i in enumerate(idx):
             dftmp = pd.json_normalize(r.json()\
                         ['data']['tseries'][i]['observations'])\
                         ['body.value'].to_frame()
@@ -264,15 +255,15 @@ def get_frost_df_v1(r: 'requests.models.Response')\
             dinfo['sensor'][vns] = sensors[n]
             # level
             if levels[n] == 0:
-                dinfo['level'][vns] = varstr_dict[vn]['default_level']
+                dinfo['level'][vns] = varstr_dict[vn]['default_level']/100
             else:
-                dinfo['level'][vns] = levels[n]
-            # parameterid
-            dinfo['parameterid'][vns] = parameterids[n]
+                dinfo['level'][vns] = levels[n]/100
+            # paramid
+            dinfo['paramid'][vns] = paramids[n]
             #print(df['header.extra.timeseries.geometry.level.value'][i])
     return dfc, dinfo
 
-def find_preferred(idx,sensors,refs,pref):
+def find_preferred(idx, sensors, refs, pref):
     sensorsU = np.unique(sensors)
     preferred_idx = []
     for s in sensorsU:
@@ -293,7 +284,7 @@ def get_element_id_order(r: 'requests.models.Response')\
     idx_lst = []
     for vn in varstr_dict:
         idx = df['header.extra.element.id']\
-                [df['header.extra.element.id']==vn].index.to_list()
+                [df['header.extra.element.id'] == vn].index.to_list()
         idx_dict[vn] = idx
         idx_lst.append(idx)
     return idx_dict, flatten(idx_lst)
@@ -416,14 +407,14 @@ def format_df(df: 'pandas.core.frame.DataFrame')\
                     '': lambda x: "{:%Y-%m-%d %H:%M UTC }".\
                             format(pd.to_datetime(x, unit="ns"))
                     },
-        index = False).split('\n')
+        index=False).split('\n')
     return dfstr
 
 def format_info_df(
     df: 'pandas.core.frame.DataFrame',
-    fdf:list,
+    fdf: list,
     dinfo: dict,
-    attribute:str,
+    attribute: str,
     )\
     -> str:
     """
@@ -472,7 +463,7 @@ def print_formatted(dfstr: list, dfstr_info: str = None):
         print(dfstr_info)
     print('')
 
-def print_info(r: 'requests.models.Response',nID: str = None):
+def print_info(r: 'requests.models.Response', nID: str = None):
     print('\n')
     print('--> ', nID, ' <--')
     dfkeys = pd.json_normalize(\
@@ -506,11 +497,11 @@ def print_available_locations():
     """
     print available offshore locations
     """
-    l = list(range(1,len(insitu_dict.keys())+1))
+    l = list(range(1, len(insitu_dict.keys())+1))
     dfc = pd.DataFrame(l)
-    dfc = dfc.rename(columns={ dfc.columns[0]: '' })
+    dfc = dfc.rename(columns={dfc.columns[0]: ''})
     df = pd.DataFrame(insitu_dict.keys())
-    df = df.rename(columns={ df.columns[0]: 'available locations' })
+    df = df.rename(columns={df.columns[0]: 'available locations'})
     dfc = pd.concat([dfc, df.reindex(dfc.index)], axis=1)
     dfstr = dfc.to_string(index=False).split('\n')
     print('----------------------')

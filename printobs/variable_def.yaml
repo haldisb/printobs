@@ -4,12 +4,12 @@
 
 sea_surface_wave_significant_height: 
         alias: Hs
-        prime_parameterid: 136
+        prime_paramid: 136
         prime_level: 0
         default_level: 0 # all defaults from FROST v0
 sea_surface_wave_mean_period: 
         alias: Tm02
-        prime_parameterid: 154
+        prime_paramid: 154
         # 160 had deprecated elementid name:
         #  sea_surface_wave_significant_height_from_spectrum_from_radar
         # 154 had deprecated elementid name:
@@ -18,49 +18,50 @@ sea_surface_wave_mean_period:
         default_level: 0
 sea_surface_wave_period_at_variance_spectral_density_maximum: 
         alias: Tp
-        prime_parameterid: 157
+        prime_paramid: 157
         prime_level: 0
         default_level: 0
 sea_surface_primary_wave_from_direction: 
         alias: DDP
-        prime_parameterid: 163
+        prime_paramid: 163
         prime_level: 0
         default_level: 0
 sea_surface_wave_maximum_height: 
         alias: Hmax
-        prime_parameterid: 135
+        prime_paramid: 135
         prime_level: 0
         default_level: 0
 wind_speed: 
         alias: FF
-        prime_parameterid: 81
-        prime_level: 0 # level 0 means default level
-        default_level: 10
+        prime_paramid: 81
+        prime_level: 1000 # level 0 means default level
+        default_level: 1000
 #wind_speed_of_gust: FG
 #max(wind_speed_of_gust PT2M): FG_2MIN
 #max(wind_speed_of_gust PT2M): FG
 max(wind_speed_of_gust PT10M): 
         alias: FG10
-        prime_parameterid: 84
-        prime_level: 0
-        default_level: 10
+        prime_paramid: 84
+        prime_level: 1000
+        default_level: 1000
 max(wind_speed_of_gust PT20M): 
         alias: FG20
-        prime_parameterid: 10085
-        prime_level: 0
-        default_level: 10
+        prime_paramid: 10085
+        prime_level: 1000
+        default_level: 1000
 wind_from_direction: 
         alias: DD
-        prime_parameterid: 61
-        prime_level: 0
-        default_level: -1
+        prime_paramid: 61
+        prime_level: 1000
+          #default_level: -1
+        default_level: 1000
 air_temperature: 
         alias: Ta
-        prime_parameterid: 211
-        prime_level: 0
-        default_level: 2
+        prime_paramid: 211
+        prime_level: 200
+        default_level: 200
 sea_surface_height_above_lowest_astronomical_tide: 
         alias: HLAT
-        prime_parameterid: 138
+        prime_paramid: 138
         prime_level: 0
         default_level: 0
