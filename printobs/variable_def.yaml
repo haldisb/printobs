@@ -47,8 +47,8 @@ max(wind_speed_of_gust PT10M):
 max(wind_speed_of_gust PT20M): 
         alias: FG20
         prime_paramid: 10085
-        prime_level: 1000
-        default_level: 1000
+        prime_level: 0
+        default_level: 0
 wind_from_direction: 
         alias: DD
         prime_paramid: 61
